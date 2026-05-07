@@ -6,7 +6,22 @@ export async function GET(request: NextRequest) {
   const roast = searchParams.get('roast') || 'Your README is on fire.'
   const repo = searchParams.get('repo') || 'unknown/repo'
 
-  const truncated = roast.length > 260 ? roast.slice(0, 257) + '...' : roast
+  // Truncate at a sentence boundary so the card never ends mid-sentence
+  function smartTruncate(text: string, max: number): string {
+    if (text.length <= max) return text
+    const slice = text.slice(0, max)
+    const lastSentence = Math.max(
+      slice.lastIndexOf('. '),
+      slice.lastIndexOf('! '),
+      slice.lastIndexOf('? ')
+    )
+    return lastSentence > max * 0.5
+      ? text.slice(0, lastSentence + 1)
+      : slice.trimEnd() + '…'
+  }
+
+  const truncated = smartTruncate(roast, 420)
+  const fontSize = truncated.length > 300 ? 44 : 52
 
   return new ImageResponse(
     (
@@ -21,12 +36,12 @@ export async function GET(request: NextRequest) {
         }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '64px' }}>
-          <span style={{ fontSize: '44px' }}>🔥</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '48px' }}>
+          <span style={{ fontSize: '40px' }}>🔥</span>
           <span
             style={{
               color: '#f97316',
-              fontSize: '28px',
+              fontSize: '26px',
               fontFamily: 'monospace',
               fontWeight: 700,
               letterSpacing: '0.05em',
@@ -36,32 +51,38 @@ export async function GET(request: NextRequest) {
           </span>
         </div>
 
-        {/* Opening quote */}
+        {/* Quote + text block, centered in remaining space */}
         <div
           style={{
-            color: '#f97316',
-            fontSize: '140px',
-            lineHeight: '0.6',
-            marginBottom: '24px',
-            opacity: 0.35,
-            fontFamily: 'serif',
-          }}
-        >
-          &ldquo;
-        </div>
-
-        {/* Roast text */}
-        <div
-          style={{
-            color: '#f4f4f5',
-            fontSize: '54px',
-            lineHeight: '1.38',
-            fontStyle: 'italic',
-            fontFamily: 'serif',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
             flex: 1,
           }}
         >
-          {truncated}
+          <div
+            style={{
+              color: '#f97316',
+              fontSize: '100px',
+              lineHeight: '0.6',
+              marginBottom: '20px',
+              opacity: 0.4,
+              fontFamily: 'serif',
+            }}
+          >
+            &ldquo;
+          </div>
+          <div
+            style={{
+              color: '#f4f4f5',
+              fontSize: `${fontSize}px`,
+              lineHeight: '1.45',
+              fontStyle: 'italic',
+              fontFamily: 'serif',
+            }}
+          >
+            {truncated}
+          </div>
         </div>
 
         {/* Footer */}
