@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
+export const maxDuration = 60
+
 function parseGitHubUrl(url: string): { owner: string; repo: string } | null {
   try {
     const parsed = new URL(url.trim())
@@ -85,7 +87,14 @@ Respond with only the roast text, nothing else.`
     }
     return NextResponse.json({ roast, repo: `${parsed.owner}/${parsed.repo}` })
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'AI generation failed'
-    return NextResponse.json({ error: message }, { status: 502 })
+    const message = err instanceof Error ? err.message : ''
+    const isTimeout = message.includes('timed out')
+    const isQuota = message.includes('429') || message.toLowerCase().includes('quota')
+    const clientError = isTimeout
+      ? 'Roast timed out — try again'
+      : isQuota
+      ? 'Too many requests — try again in a moment'
+      : 'AI generation failed — try again'
+    return NextResponse.json({ error: clientError }, { status: 502 })
   }
 }

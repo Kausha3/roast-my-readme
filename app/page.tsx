@@ -1,14 +1,39 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+
+const LOADING_LINES = [
+  'fetching the README...',
+  'reading it with a frown...',
+  'finding the worst parts...',
+  'consulting the roast oracle...',
+  'sharpening the jokes...',
+  'almost done destroying you...',
+]
 
 export default function Home() {
   const [url, setUrl] = useState('')
   const [roast, setRoast] = useState('')
   const [repo, setRepo] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingLine, setLoadingLine] = useState(0)
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (loading) {
+      setLoadingLine(0)
+      timerRef.current = setInterval(() => {
+        setLoadingLine((n) => Math.min(n + 1, LOADING_LINES.length - 1))
+      }, 1800)
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [loading])
 
   async function handleRoast() {
     if (!url.trim() || loading) return
@@ -81,9 +106,18 @@ export default function Home() {
 
       {/* Loading state */}
       {loading && (
-        <p className="mt-16 text-zinc-600 font-mono text-sm animate-pulse">
-          reading with extreme judgment...
-        </p>
+        <div className="mt-16 flex flex-col items-center gap-4">
+          <p key={loadingLine} className="text-zinc-500 font-mono text-sm animate-pulse">
+            {LOADING_LINES[loadingLine]}
+          </p>
+          {/* Progress bar */}
+          <div className="w-64 h-px bg-zinc-800 overflow-hidden rounded-full">
+            <div
+              className="h-full bg-orange-600 transition-all duration-[1800ms] ease-linear"
+              style={{ width: `${((loadingLine + 1) / LOADING_LINES.length) * 100}%` }}
+            />
+          </div>
+        </div>
       )}
 
       {/* Result */}
